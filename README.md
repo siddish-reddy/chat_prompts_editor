@@ -1,4 +1,4 @@
-![](public/sample_interface_v0.png.png)
+![Sample interface](public/sample_interface_v0.png)
 
 # Getting Started with Create React App
 
