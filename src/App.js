@@ -61,22 +61,22 @@ function App() {
     return (
       <div>
         {data.map((item, index) => (
-          <div key={item.id} className="mb-4">
-            <label className="block">Role:</label>
+          <div key={item.id} className="mb-6">
+            <label className="block mb-1">Role:</label>
             <select
               value={item.role}
               onChange={(e) => handleRoleChange(index, e.target.value)}
-              className="rounded border p-2"
+              className="border border-gray-300 rounded shadow-md p-2 w-full"
             >
               <option value="system">system</option>
               <option value="assistant">assistant</option>
               <option value="user">user</option>
             </select>
-            <label className="block mt-2">Content:</label>
+            <label className="block mt-4 mb-1">Content:</label>
             <textarea
               value={item.content}
               onChange={(e) => handleContentChange(index, e.target.value)}
-              className="w-full rounded border p-2"
+              className="w-full h-20 border border-gray-300 rounded shadow-md p-2"
             />
           </div>
         ))}
@@ -112,33 +112,39 @@ function App() {
   };
 
   return (
-    <div className="App">
-      <h1>Interface</h1>
-      <Form data={data} onDataChange={setData} />
-      <button
-        className="bg-blue-600 text-white px-4 py-2 rounded shadow mr-2"
-        onClick={handleAddNewTurn}
-      >
-        + Add New Turn
-      </button>
-      <button
-        className="bg-green-600 text-white px-4 py-2 rounded shadow"
-        onClick={handleCopy}
-      >
-        Copy
-      </button>
-      {isCopied && (
-        <span className="ml-2 inline-block bg-green-500 text-white px-4 py-2 rounded shadow">
-          Copied to clipboard!
-        </span>
-      )}
+    <div className="App min-h-screen bg-gray-100">
+      <div className="container mx-auto px-4 py-10">
+        <h1 className="text-4xl font-bold mb-6">Interface</h1>
+        
+        <div className="mb-4">
+          <button
+            className="bg-yellow-500 text-white font-bold px-6 py-2 rounded shadow"
+            onClick={handlePaste}
+          >
+            Paste
+          </button>
+        </div>
 
-      <button
-        className="bg-yellow-600 text-white px-4 py-2 rounded shadow"
-        onClick={handlePaste}
-      >
-        Load from clipboard
-      </button>
+        <Form data={data} onDataChange={setData} />
+        <button
+          className="bg-blue-500 text-white font-bold px-6 py-2 rounded shadow mr-2"
+          onClick={handleAddNewTurn}
+        >
+          + Add New Turn
+        </button>
+        <button
+            className="bg-green-500 text-white font-bold px-6 py-2 rounded shadow mr-2"
+          onClick={handleCopy}
+        >
+          Copy
+        </button>
+        {isCopied && (
+          <span className="ml-2 inline-block bg-green-500 text-white px-4 py-2 rounded shadow">
+            Copied to clipboard!
+          </span>
+        )}
+        
+      </div>
     </div>
   );
 }
