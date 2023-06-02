@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 
 import './App.css';
 
@@ -11,25 +11,42 @@ function copyToClipboard(text) {
   document.body.removeChild(textarea);
 }
 
+function loadDataFromLocalStorage() {
+  const storedData = localStorage.getItem('savedData');
+  if (storedData) {
+    return JSON.parse(storedData);
+  } else {
+    // If no data is stored in localStorage, return the initial static data
+    return [
+      {
+        id: '1',
+        role: 'system',
+        content: 'You are <xyz> expert. You do this:\n\nYou don\'t do this:\n\nYou think step by step and you are very careful.',
+      },
+      {
+        id: '2',
+        role: 'user',
+        content: 'some text',
+      },
+      {
+        id: '3',
+        role: 'assistant',
+        content: 'now its assistants time think/say/take actions',
+      },
+    ];
+  }
+}
+
 function App() {
-  const [data, setData] = useState([
-    {
-      "id": "1",
-      "role": "system",
-      "content": "some text"
-    },
-    {
-      "id": "2",
-      "role": "assistant",
-      "content": "some other text"
-    },
-    {
-      "id": "3",
-      "role": "user",
-      "content": "some more text\ntext continued"
-    }
-  ]);
+  const [data, setData] = useState(loadDataFromLocalStorage());
+
   const [isCopied, setIsCopied] = useState(false);
+
+
+  useEffect(() => {
+    localStorage.setItem('savedData', JSON.stringify(data));
+  }, [data]);
+
 
   const handleAddNewTurn = () => {
     const lastRole = data[data.length - 1]?.role || 'system';
