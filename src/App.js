@@ -45,6 +45,15 @@ function App() {
 
   useEffect(() => {
     localStorage.setItem('savedData', JSON.stringify(data));
+
+    // increase the height of the textarea as the user types more content
+
+    const textareas = document.querySelectorAll('textarea.turn-content');
+    textareas.forEach((textarea) => {
+      textarea.style.height = 'auto';
+      textarea.style.height = textarea.scrollHeight + 'px';
+    });
+
   }, [data]);
 
 
@@ -78,22 +87,22 @@ function App() {
     return (
       <div>
         {data.map((item, index) => (
-          <div key={item.id} className="mb-6">
-            <label className="block mb-1">Role:</label>
+          // put select and text area horizontally side by side
+          <div key={item.id} className="mb-6 flex flex-row h-full">
             <select
               value={item.role}
               onChange={(e) => handleRoleChange(index, e.target.value)}
-              className="border border-gray-300 rounded shadow-md p-2 w-full"
+              className="border text-justify border-gray-300 rounded shadow-md p-2 w-30 mr-2.5 h-fit"
             >
               <option value="system">system</option>
               <option value="assistant">assistant</option>
               <option value="user">user</option>
             </select>
-            <label className="block mt-4 mb-1">Content:</label>
             <textarea
               value={item.content}
               onChange={(e) => handleContentChange(index, e.target.value)}
-              className="w-full h-20 border border-gray-300 rounded shadow-md p-2"
+              className="turn-content w-full h-full border border-gray-300 rounded shadow-sm p-2"
+              // TODO: increase the height of the textarea as the user types more content
             />
           </div>
         ))}
@@ -103,7 +112,9 @@ function App() {
 
   const handleCopy = () => {
     const dataWithoutId = data.map(({ id, ...rest }) => rest);
-    const json = JSON.stringify(dataWithoutId, null, 2);
+    // remove if content is empty
+    const dataWithoutEmptyContent = dataWithoutId.filter(({ content }) => content !== '');
+    const json = JSON.stringify(dataWithoutEmptyContent, null, 2);
     copyToClipboard(json);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 1500);
@@ -129,16 +140,15 @@ function App() {
   };
 
   return (
-    <div className="App min-h-screen bg-gray-100">
+    <div className="App min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-10">
-        <h1 className="text-4xl font-bold mb-6">Interface</h1>
-        
+        <h1 className="text-4xl font-bold mb-6">Chat Prompts Playground</h1>
         <div className="mb-4">
           <button
             className="bg-yellow-500 text-white font-bold px-6 py-2 rounded shadow"
             onClick={handlePaste}
           >
-            Paste
+            Paste from clipboard
           </button>
         </div>
 
