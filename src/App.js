@@ -37,11 +37,55 @@ function loadDataFromLocalStorage() {
   }
 }
 
+
+
+function Form({ data, onDataChange }) {
+  const handleRoleChange = useCallback((index, newRole) => {
+    onDataChange(data.map((d, i) => (i === index ? { ...d, role: newRole } : d)));
+  }, [data, onDataChange]);
+
+  const handleContentChange = useCallback((index, newContent) => {
+    onDataChange(
+      data.map((d, i) =>
+        i === index ? { ...d, content: newContent } : d
+      )
+    );
+  }, [data, onDataChange]);
+
+  return (
+    <div>
+      {data.map((item, index) => (
+        // put select and text area horizontally side by side
+        <div key={item.id} className="mb-6 flex flex-row h-full">
+          <select
+            value={item.role}
+            onChange={(e) => handleRoleChange(index, e.target.value)}
+            className="border text-justify border-gray-300 rounded shadow-md p-2 w-30 mr-2.5 h-fit"
+          >
+            <option value="system">system</option>
+            <option value="assistant">assistant</option>
+            <option value="user">user</option>
+          </select>
+          <textarea
+            value={item.content}
+            onChange={(e) => handleContentChange(index, e.target.value)}
+            className="turn-content w-full h-full border border-gray-300 rounded shadow-sm p-2"
+            // TODO: increase the height of the textarea as the user types more content
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+
 function App() {
   const [data, setData] = useState(loadDataFromLocalStorage());
 
   const [isCopied, setIsCopied] = useState(false);
 
+  const [openAIKey, setOpenAIKey] = useState('OpenAI API key');
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('savedData', JSON.stringify(data));
@@ -70,46 +114,6 @@ function App() {
     setData([...data, newItem]);
   };
 
-
-  function Form({ data, onDataChange }) {
-    const handleRoleChange = useCallback((index, newRole) => {
-      onDataChange(data.map((d, i) => (i === index ? { ...d, role: newRole } : d)));
-    }, [data, onDataChange]);
-  
-    const handleContentChange = useCallback((index, newContent) => {
-      onDataChange(
-        data.map((d, i) =>
-          i === index ? { ...d, content: newContent } : d
-        )
-      );
-    }, [data, onDataChange]);
-  
-    return (
-      <div>
-        {data.map((item, index) => (
-          // put select and text area horizontally side by side
-          <div key={item.id} className="mb-6 flex flex-row h-full">
-            <select
-              value={item.role}
-              onChange={(e) => handleRoleChange(index, e.target.value)}
-              className="border text-justify border-gray-300 rounded shadow-md p-2 w-30 mr-2.5 h-fit"
-            >
-              <option value="system">system</option>
-              <option value="assistant">assistant</option>
-              <option value="user">user</option>
-            </select>
-            <textarea
-              value={item.content}
-              onChange={(e) => handleContentChange(index, e.target.value)}
-              className="turn-content w-full h-full border border-gray-300 rounded shadow-sm p-2"
-              // TODO: increase the height of the textarea as the user types more content
-            />
-          </div>
-        ))}
-      </div>
-    );
-  }
-
   const handleCopy = () => {
     const dataWithoutId = data.map(({ id, ...rest }) => rest);
     // remove if content is empty
@@ -119,6 +123,53 @@ function App() {
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 1500);
   };
+  
+  const handleGenerate = async () => {
+    if (openAIKey === 'OpenAI API key') {
+      alert('You need to enter your OpenAI API key first.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const dataWithoutId = data.map(({ id, ...rest }) => rest);
+      // remove if content is empty
+      const dataWithoutEmptyContent = dataWithoutId.filter(({ content }) => content !== '');
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openAIKey}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-4",
+          messages: dataWithoutEmptyContent,
+          max_tokens: 300,
+          temperature: 0.5,
+          top_p: 1,
+          frequency_penalty: 0.0,
+          presence_penalty: 0.6,
+          // stop: ['\n\n'],
+        }),
+      });
+      const response_json = await response.json();
+      const { choices } = response_json;
+      const generatedText = choices[0].message.content;
+
+      const newItem = {
+        id: (data.length + 1).toString(),
+        role: 'assistant',
+        content: generatedText,
+      };
+      setData([...data, newItem]);
+
+    } catch (error) {
+      console.error(error);
+      alert('Failed to generate data. Please make sure you have entered a valid OpenAI API key.');
+    }
+    setLoading(false);
+  };
+
+
   
   const handlePaste = async () => {
     try {
@@ -143,18 +194,54 @@ function App() {
     <div className="App min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-10">
         <h1 className="text-4xl font-bold mb-6">Chat Prompts Playground</h1>
-        <div className="mb-4">
+        <div className="mb-4 flex items-center">
           <button
             className="bg-yellow-500 text-white font-bold px-6 py-2 rounded shadow"
             onClick={handlePaste}
           >
             Paste from clipboard
           </button>
+          <textarea
+            value={openAIKey}
+            onChange={(e) => setOpenAIKey(e.target.value)}
+            className="border border-gray-300 rounded shadow-sm min-h-[auto] ml-6 p-2  h-10 resize-none"
+            // style={{ width: '500px' }}
+            rows="1"
+          />
         </div>
 
         <Form data={data} onDataChange={setData} />
         <button
-          className="bg-blue-500 text-white font-bold px-6 py-2 rounded shadow mr-2"
+            className="text-white font-bold px-6 py-2 rounded shadow mr-2 bg-blue-500"
+            onClick={handleGenerate}
+          >
+            {loading ? (
+              <svg
+                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+            ) : (
+              "Generate"
+            )}
+          </button>
+        <button
+          className="text-white font-bold px-6 py-2 rounded shadow mr-2 bg-gray-400"
           onClick={handleAddNewTurn}
         >
           + Add New Turn
