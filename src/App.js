@@ -38,6 +38,15 @@ function loadDataFromLocalStorage() {
 }
 
 
+function loadKeyFromLocalStorage() {
+  const storedKey = localStorage.getItem('openai-key');
+  if (storedKey) {
+    return storedKey;
+  } else {
+    // If no data is stored in localStorage, return the initial static data
+    return 'OpenAI API key';
+  }
+}
 
 function Form({ data, onDataChange }) {
   const handleRoleChange = useCallback((index, newRole) => {
@@ -78,13 +87,12 @@ function Form({ data, onDataChange }) {
   );
 }
 
-
 function App() {
   const [data, setData] = useState(loadDataFromLocalStorage());
 
   const [isCopied, setIsCopied] = useState(false);
 
-  const [openAIKey, setOpenAIKey] = useState('OpenAI API key');
+  const [openAIKey, setOpenAIKey] = useState(loadKeyFromLocalStorage());
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -99,6 +107,10 @@ function App() {
     });
 
   }, [data]);
+
+  useEffect(() => {
+    localStorage.setItem('openai-key', openAIKey);
+  }, [openAIKey]);
 
 
   const handleAddNewTurn = () => {
@@ -262,4 +274,5 @@ function App() {
     </div>
   );
 }
+
 export default App;
