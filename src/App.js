@@ -93,6 +93,8 @@ function App() {
   const [isCopied, setIsCopied] = useState(false);
 
   const [openAIKey, setOpenAIKey] = useState(loadKeyFromLocalStorage());
+  const [model, setModel] = useState('gpt-3.5-turbo');
+
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -153,14 +155,8 @@ function App() {
           'Authorization': `Bearer ${openAIKey}`,
         },
         body: JSON.stringify({
-          model: "gpt-4",
+          model: "gpt-3.5-turbo",
           messages: dataWithoutEmptyContent,
-          max_tokens: 300,
-          temperature: 0.5,
-          top_p: 1,
-          frequency_penalty: 0.0,
-          presence_penalty: 0.6,
-          // stop: ['\n\n'],
         }),
       });
       const response_json = await response.json();
@@ -220,6 +216,16 @@ function App() {
             // style={{ width: '500px' }}
             rows="1"
           />
+          <select
+            value={model}
+            onChange={(e) => setModel( e.target.value)}
+            className="border text-justify border-gray-300 rounded shadow-md p-2 w-30 mr-2.5 h-fit"
+          >
+            <option value="gpt-3.5-turbo">GPT 3.5</option>
+            <option value="gpt-4">GPT 4</option>
+            <option value="gpt-3.5-turbo-16k">GPT 3.5 16k</option>
+            <option value="gpt-4-32k">GPT 4 32k</option>
+          </select>
         </div>
 
         <Form data={data} onDataChange={setData} />
