@@ -48,6 +48,16 @@ function loadKeyFromLocalStorage() {
   }
 }
 
+function loadAnthropicKeyFromLocalStorage() {
+  const storedKey = localStorage.getItem('anthropic-key');
+  if (storedKey) {
+    return storedKey;
+  } else {
+    // If no data is stored in localStorage, return the initial static data
+    return 'Anthropic API key';
+  }
+}
+
 function Form({ data, onDataChange }) {
   const handleRoleChange = useCallback((index, newRole) => {
     onDataChange(data.map((d, i) => (i === index ? { ...d, role: newRole } : d)));
@@ -93,6 +103,8 @@ function App() {
   const [isCopied, setIsCopied] = useState(false);
 
   const [openAIKey, setOpenAIKey] = useState(loadKeyFromLocalStorage());
+  const [anthropicKey, setAnthropicKey] = useState(loadAnthropicKeyFromLocalStorage());
+
   const [model, setModel] = useState('gpt-3.5-turbo');
 
   const [loading, setLoading] = useState(false);
@@ -113,6 +125,10 @@ function App() {
   useEffect(() => {
     localStorage.setItem('openai-key', openAIKey);
   }, [openAIKey]);
+
+  useEffect(() => {
+    localStorage.setItem('anthropic-key', anthropicKey);
+  }, [anthropicKey]);
 
 
   const handleAddNewTurn = () => {
@@ -143,32 +159,65 @@ function App() {
       alert('You need to enter your OpenAI API key first.');
       return;
     }
+    if (anthropicKey === 'Anthropic API key') {
+      alert('You need to enter your Anthropic API key first.');
+      return;
+    }
     setLoading(true);
     try {
       const dataWithoutId = data.map(({ id, ...rest }) => rest);
       // remove if content is empty
       const dataWithoutEmptyContent = dataWithoutId.filter(({ content }) => content !== '');
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openAIKey}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-3.5-turbo",
-          messages: dataWithoutEmptyContent,
-        }),
-      });
-      const response_json = await response.json();
-      const { choices } = response_json;
-      const generatedText = choices[0].message.content;
+      console.log(model);
 
-      const newItem = {
-        id: (data.length + 1).toString(),
-        role: 'assistant',
-        content: generatedText,
-      };
-      setData([...data, newItem]);
+      if (model.includes('claude')) {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': `${anthropicKey}`,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model:model,
+            messages: dataWithoutEmptyContent,
+          }),
+        });
+        const response_json = await response.json();
+        const { messages } = response_json;
+        const generatedText = messages[0].content;
+
+        const newItem = {
+          id: (data.length + 1).toString(),
+          role: 'assistant',
+          content: generatedText,
+        };
+        setData([...data, newItem]);
+      } else {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${openAIKey}`,
+          },
+          body: JSON.stringify({
+            model:model,
+            messages: dataWithoutEmptyContent,
+          }),
+        });
+        const response_json = await response.json();
+        const { choices } = response_json;
+        const generatedText = choices[0].message.content;
+
+        const newItem = {
+          id: (data.length + 1).toString(),
+          role: 'assistant',
+          content: generatedText,
+        };
+        setData([...data, newItem]);
+      }
+
+      
 
     } catch (error) {
       console.error(error);
@@ -216,15 +265,24 @@ function App() {
             // style={{ width: '500px' }}
             rows="1"
           />
+          <textarea
+            value={anthropicKey}
+            onChange={(e) => setAnthropicKey(e.target.value)}
+            className="border border-gray-300 rounded shadow-sm min-h-[auto] ml-6 p-2  h-10 resize-none"
+            // style={{ width: '500px' }}
+            rows="1"
+          />
           <select
             value={model}
             onChange={(e) => setModel( e.target.value)}
             className="border text-justify border-gray-300 rounded shadow-md p-2 w-30 mr-2.5 h-fit"
           >
             <option value="gpt-3.5-turbo">GPT 3.5</option>
-            <option value="gpt-4">GPT 4</option>
-            <option value="gpt-3.5-turbo-16k">GPT 3.5 16k</option>
+            <option value="gpt-4-turbo-preview">GPT 4</option>
             <option value="gpt-4-32k">GPT 4 32k</option>
+            <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+            <option value="claude-3-sonnet-20240229">Claude 3 Sonnet</option>
+            <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
           </select>
         </div>
 
